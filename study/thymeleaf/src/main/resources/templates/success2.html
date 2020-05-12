@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h3>Thymeleaf条件判断</h3>
+<p style="color: red;">th:if中条件成立时才显示结果</p>
+<p><span th:if="${username != null}">username不为空</span></p>
+<p><span th:if="${age != null}">age不为空</span></p>
+<p style="color: red;">th:unless与th:if恰好相反，只有表达式中的条件不成立，才会显示结果</p>
+<p th:unless="${address != null}">address为空</p>
+<p style="color: red;">支持多路选择Switch结构，默认属性default可以用*表示</p>
+<div th:switch="${role}">
+    <p th:case="'admin'">管理员</p>
+    <p th:case="'guest'">来宾</p>
+    <p th:case="'*'">其他</p>
+</div>
+</body>
+</html>

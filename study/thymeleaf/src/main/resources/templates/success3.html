@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h3>Thymeleaf循环</h3>
+<table border="1" cellspacing ="0" width="600px">
+    <tr>
+        <th>书名</th>
+        <th>作者</th>
+        <th>价格</th>
+    </tr>
+    <tr th:each="b:${book}">
+        <th th:text="${b.title}"></th>
+        <th th:text="${b.author}"></th>
+        <th th:text="${b.price}"></th>
+    </tr>
+</table>
+</body>
+</html>
+</body>
+</html>

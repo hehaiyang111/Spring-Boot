@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h3>Thymeleaf表达式访问数据</h3>
+<p style="color: red;">${param.x}将返回一个名为x的请求参数</p>
+<p>
+    访问页面传递的参数：<span th:text="${param.username[0]}">登录名</span>，
+    <span th:text="${param.password[0]}">密码</span>
+</p>
+<p style="color: red;">${x}将返回存储在Thymeleaf上下文中的变量X或作为请求Request作用范围域中的属性。</p>
+<p>访问request作用范围域中的变量：<span th:text="${book}">图书信息</span></p>
+<p style="color: red;">${sessin.x}将返回一个名为x的会话HTTPSession作用范围域中的属性。</p>
+<p>访问session作用范围域中的变量：<span th:text="${session.shuju}">属于</span></p>
+<p style="color: red;">${application.x}将返回一个名为x的全局ServletContext上下文作用范围域中的属性。</p>
+<p>访问application作用范围域中的变量：<span th:text="${application.ss}">动态页面模板</span></p>
+</body>
+</html>
