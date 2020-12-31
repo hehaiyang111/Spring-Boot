@@ -710,3 +710,122 @@ public WebMvcAutoConfigurationAdapter(
 		}
 ```
 
+#### 请求参数处理
+
+发送请求
+
+```java
+@RestController
+public class HelloController {
+//    @RequestMapping(value = "/user",method = RequestMethod.GET)
+    @GetMapping(value = "/user")
+    public String getUser(){
+        return "GET-张三";
+    }
+
+//    @RequestMapping(value = "/user",method = RequestMethod.POST)
+    @PostMapping(value = "/user")
+    public String saveUser(){
+        return "POST-张三";
+    }
+
+//    @RequestMapping(value = "/user",method = RequestMethod.PUT)
+    @PutMapping(value = "/user")
+    public String putUser(){
+        return "PUT-张三";
+    }
+
+//    @RequestMapping(value = "/user",method = RequestMethod.DELETE)
+    @DeleteMapping(value = "/user")
+    public String deleteUser(){
+        return "DELETE-张三";
+    }
+}
+```
+
+**如果是客户端直接发送请求** 如PostMan，还有前后端分离的环境，后端仅仅是提供一些接口，不需要我们写一些页面，他们可以直接发送相应请求。
+
+**如果是表单发送请求**：因为表单的发送方式只有Get和Post并没有Put和Delete，那么该如何解决呢？我们可以看一看底层源码的实现。
+
+```java
+@Bean
+	@ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
+	@ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
+	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
+```
+
+首先要开启，spring.mvc.hiddenmethod.filter，如果不开启则不匹配，matchIfMissing = false。springboot默认不开，也只有我们自己写页面，有表单请求的时候会开启。
+
+```yml
+spring:
+ mvc:
+     hiddenmethod:
+       filter:
+         enabled: true
+```
+
+```java
+public static final String DEFAULT_METHOD_PARAM = "_method";
+
+/**
+	这里可以看出表单类型填成post，加上一个_method,得到_method的值	
+**/
+if ("POST".equals(request.getMethod()) && request.getAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE) == null) {
+    		//得到_method的值
+			String paramValue = request.getParameter(this.methodParam);
+			if (StringUtils.hasLength(paramValue)) {
+				String method = paramValue.toUpperCase(Locale.ENGLISH);
+				if (ALLOWED_METHODS.contains(method)) {
+                    // 把method传进HttpMethodRequestWrapper重新包装，看一下HttpMethodRequestWrapper
+					requestToUse = new HttpMethodRequestWrapper(request, method);
+				}
+			}
+		}
+```
+
+![image-20201231154329359](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20201231154329359.png)
+
+可以看到包装器就是重写了方法，把_method传的方法重写出去。
+
+
+
+#### 请求处理原理
+
+![image-20201231161836037](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20201231161836037.png)
+
+**从doDIspatch那里打断点看源码**
+
+```java
+protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		HttpServletRequest processedRequest = request;
+		HandlerExecutionChain mappedHandler = null;
+		boolean multipartRequestParsed = false;
+
+		WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+
+		try {
+			ModelAndView mv = null;
+			Exception dispatchException = null;
+
+			try {
+				processedRequest = checkMultipart(request);
+				multipartRequestParsed = (processedRequest != request);
+				
+				// Determine handler for the current request.
+                //找到当前映射给哪个HandleMapping处理
+                //HandleMapping就是/xx请求交给xxx处理
+				mappedHandler = getHandler(processedRequest);
+```
+
+![image-20201231162946866](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20201231162946866.png)
+
+**遍历handlerMapping**其中RequestMappingHanlerMapping保存了所有的请求映射。
+
+![image-20201231163154595](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20201231163154595.png)
+
+* SpringBoot自动配置欢迎页的 WelcomePageHandlerMapping 。访问 /能访问到index.html；
+* SpringBoot自动配置了默认 的 RequestMappingHandlerMapping
+* 请求进来，挨个尝试所有的HandlerMapping看是否有请求信息。
+  * 如果有就找到这个请求对应的handler
+  * 没有就接着遍历
+* 如果需要一些自定义的映射处理也可以自己给容器中放HandlerMapping。自定义**HandleMapping**
