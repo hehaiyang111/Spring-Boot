@@ -828,4 +828,121 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 * 请求进来，挨个尝试所有的HandlerMapping看是否有请求信息。
   * 如果有就找到这个请求对应的handler
   * 没有就接着遍历
-* 如果需要一些自定义的映射处理也可以自己给容器中放HandlerMapping。自定义**HandleMapping**
+  * 如果需要一些自定义的映射处理也可以自己给容器中放HandlerMapping。自定义**HandleMapping**
+
+#### 普通参数与基本注解
+
+```java
+@PathVariable @RequestHeader @ModelAttribute @RequestParam @MatrixVariable @CookieValue @RequestBody
+```
+
+>@PathVariable
+
+```java
+@RestController
+public class ParaMeterController {
+    @GetMapping("/car/{id}/owner/{username}")
+    public Map<String, Object> getCar(@PathVariable("id") int id,
+                                      @PathVariable("username") String username,
+                                      @PathVariable Map<String,String> map1) {
+        Map<String,Object> map = new HashMap<>();
+        map.put("id", id);
+        map.put("username", username);
+        map.put("map1",map1);
+        return map;
+    }
+}
+```
+
+![image-20210103203253178](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20210103203253178.png)
+
+>@RequestHeader
+
+```java
+@RestController
+public class ParaMeterController {
+    @GetMapping("/car/{id}/owner/{username}")
+    public Map<String, Object> getCar(@PathVariable("id") int id,
+                                      @PathVariable("username") String username,
+                                      @RequestHeader("Host") String host,
+                                      @RequestHeader Map<String,String> map1) {
+        Map<String,Object> map = new HashMap<>();
+//        map.put("id",id);
+//        map.put("username",username);
+        map.put("host", host);
+        map.put("allCookies", map1);
+        return map;
+    }
+}
+```
+
+![image-20210103204646884](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20210103204646884.png)
+
+> @RequestParam
+
+```java
+//传参  car/1/owner/lisi?age=14&interests=basket&interests=swim
+
+@RestController
+public class ParaMeterController {
+    @GetMapping("/car/{id}/owner/{username}")
+    public Map<String, Object> getCar(@PathVariable("id") int id,
+                                      @PathVariable("username") String username,
+                                      @RequestHeader("Host") String host,
+                                      @RequestHeader Map<String,String> map1,
+                                      @RequestParam("age") int age,
+                                      @RequestParam("interests") List<String> paramList) {
+        Map<String,Object> map = new HashMap<>();
+//        map.put("id",id);
+//        map.put("username",username);
+//        map.put("host", host);
+//        map.put("allCookies", map1);
+        map.put("age", age);
+        map.put("paramList", paramList);
+        return map;
+    }
+}
+```
+
+![image-20210103205242468](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20210103205242468.png)
+
+> @CookieValue
+
+```java
+@RestController
+public class ParaMeterController {
+    @GetMapping("/car/{id}/owner/{username}")
+    public Map<String, Object> getCar(@PathVariable("id") int id,
+                                      @PathVariable("username") String username,
+                                      @RequestHeader("Host") String host,
+                                      @RequestHeader Map<String,String> map1,
+                                      @RequestParam("age") int age,
+                                      @RequestParam("interests") List<String> paramList,
+                                      @CookieValue("Idea-e63af95c") String ide,
+                                      @CookieValue("Idea-e63af95c") Cookie cookie) {   //Cookie是http包的
+        Map<String,Object> map = new HashMap<>();
+//        map.put("id",id);
+//        map.put("username",username);
+//        map.put("host", host);
+//        map.put("allCookies", map1);
+//        map.put("age", age);
+//        map.put("paramList", paramList);
+        map.put("Idea-e63af95c", ide);
+//        System.out.println(cookie1.getClass().getName());
+        System.out.println(cookie.getName() + "=====>" + cookie.getValue());
+        return map;
+    }
+}
+```
+
+> @RequestBody
+
+```java
+@PostMapping("/save")
+    public Map save(@RequestBody String content) {
+        Map<String,Object> map = new HashMap<>();
+        map.put("content", content);
+        return map;
+    }
+```
+
