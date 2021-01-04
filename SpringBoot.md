@@ -946,3 +946,118 @@ public class ParaMeterController {
     }
 ```
 
+> @RequestAttribute   获取request域属性
+
+```java
+@Controller
+public class PageController {
+    @GetMapping("/page")
+    public String getPages(HttpServletRequest request) {
+        request.setAttribute("msg","测试一下呗.....");
+        request.setAttribute("code",200);
+        return "forward:/att";
+    }
+
+    @ResponseBody
+    @GetMapping("/att")
+    public Map getAtt(HttpServletRequest request,
+                      @RequestAttribute("msg") String msg,
+                      @RequestAttribute("code") int code) {
+        Map<String,Object> map = new HashMap<>();
+        map.put("msg_request",request.getAttribute("msg"));
+        map.put("msg_annotation",msg);
+        return map;
+    }
+}
+
+//   {"msg_request":"测试一下呗.....","msg_annotation":"测试一下呗....."}
+```
+
+> @MatrixValue
+
+```java
+    //1、语法： 请求路径：/cars/sell;low=34;brand=byd,audi,yd
+    //2、SpringBoot默认是禁用了矩阵变量的功能
+    //      手动开启：原理。对于路径的处理。UrlPathHelper进行解析。
+    //              removeSemicolonContent（移除分号内容）支持矩阵变量的
+    //3、矩阵变量必须有url路径变量才能被解析
+    //    /cars/sell;low=34;brand=byd,audi,yd
+    @GetMapping("/cars/{sell}") //url分号前的要放在{}里
+    public Map matrixValue(@MatrixVariable("low") int low,
+                           @MatrixVariable("brand") List<String> brand) {
+        Map<String,Object> map = new HashMap<>();
+        map.put("low", low);
+        map.put("brand", brand);
+        return map;
+    }
+// 期望结果：{"low":34,"brand":["byd","audi","yd"]}
+```
+
+* 这样访问会报400错误。
+
+我们打开**WebMvcAutoConfiguration**找到**configurePathMatch()方法**可以看到定义了一个url帮助器**UrlPathHelper()**.
+
+点开UrlPathHelper()方法可以看到**移除path中的分号默认是true**，我们需要重新配置一下。
+
+```java
+static volatile Boolean websphereComplianceFlag;
+
+
+	private boolean alwaysUseFullPath = false;
+
+	private boolean urlDecode = true;
+
+	private boolean removeSemicolonContent = true;  //移除path中的分号默认是true
+```
+
+**如何重新配置呢？**
+
+![image-20210104102216558](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20210104102216558.png)
+
+**方法一** ：实现WebMvcConfigurer：
+
+```java
+@Configuration
+public class MyConfig implements WebMvcConfigurer {
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        UrlPathHelper urlPathHelper = new UrlPathHelper();
+        urlPathHelper.setRemoveSemicolonContent(false);
+        configurer.setUrlPathHelper(urlPathHelper);
+    }
+}
+```
+
+**方法二**：@Bean方式：
+
+```java
+@Bean
+    public WebMvcConfigurer webMvcConfigurer() {
+        return new WebMvcConfigurer(){
+            @Override
+            public void configurePathMatch(PathMatchConfigurer configurer) {
+                UrlPathHelper urlPathHelper = new UrlPathHelper();
+                urlPathHelper.setRemoveSemicolonContent(false);
+                configurer.setUrlPathHelper(urlPathHelper);
+            }
+        };
+    }
+```
+
+**Example2:**
+
+```java
+//    /boss/1;age=20/2;age=20
+    @GetMapping("/boss/{bossInfo}/{employInfo}")
+    public Map matrixValue1(@MatrixVariable(value = "age", pathVar = "bossInfo") Integer bossAge,
+                            @MatrixVariable(value = "age", pathVar = "employInfo") Integer employAge){
+        Map<String,Object> map = new HashMap<>();
+        map.put("bossAge", bossAge);
+        map.put("employAge", employAge);
+        return map;
+    }
+
+
+{"bossAge":20,"employAge":10}
+```
+
