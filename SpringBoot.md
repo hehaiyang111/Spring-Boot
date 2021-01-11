@@ -1061,3 +1061,100 @@ public class MyConfig implements WebMvcConfigurer {
 {"bossAge":20,"employAge":10}
 ```
 
+
+
+只要我们导入springboot-web这个starter**springboot自动将对象类型转成json类型**，原理可发请求，在**DispatcherServlet**的doDispatch()中的ha.handle()方法一步一步debug。
+
+![image-20210111181642139](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20210111181642139.png)
+
+#### 内容协商
+
+利用url. localhost:8080/json?format=xml可以获取xml数据
+
+step1:
+
+```xml
+ <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+</dependency>
+```
+
+```yaml
+spring:
+    contentnegotiation:
+      favor-parameter: true  #开启请求参数内容协商模式
+```
+
+![image-20210111185128420](C:\Users\86159\AppData\Roaming\Typora\typora-user-images\image-20210111185128420.png)
+
+自定义,config中重写这两个方法
+
+```java
+public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+                //Map<String, MediaType> mediaTypes
+                Map<String, MediaType> mediaTypes = new HashMap<>();
+                mediaTypes.put("json",MediaType.APPLICATION_JSON);
+                mediaTypes.put("xml",MediaType.APPLICATION_XML);
+                mediaTypes.put("gg",MediaType.parseMediaType("application/hehe"));
+                //指定支持解析哪些参数对应的哪些媒体类型
+                ParameterContentNegotiationStrategy parameterStrategy = new ParameterContentNegotiationStrategy(mediaTypes);
+//                parameterStrategy.setParameterName("ff");
+
+                HeaderContentNegotiationStrategy headeStrategy = new HeaderContentNegotiationStrategy();
+
+                configurer.strategies(Arrays.asList(parameterStrategy,headeStrategy));
+            }
+
+
+           public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+                converters.add(new HeheheConverter());
+            }
+```
+
+```java
+package com.hhy.config;
+
+import com.hhy.pojo.Person;
+import org.springframework.http.HttpInputMessage;
+import org.springframework.http.HttpOutputMessage;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.http.converter.HttpMessageNotWritableException;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
+
+public class HeheheConverter implements HttpMessageConverter<Person> {
+    @Override
+    public boolean canRead(Class<?> clazz, MediaType mediaType) {
+        return false;
+    }
+
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        return clazz.isAssignableFrom(Person.class);
+    }
+
+    @Override
+    public List<MediaType> getSupportedMediaTypes() {
+        return MediaType.parseMediaTypes("application/hehe");
+    }
+
+    @Override
+    public Person read(Class<? extends Person> clazz, HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
+        return null;
+    }
+
+    @Override
+    public void write(Person person, MediaType contentType, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
+        String data = person.getUserName() + ";" + person.getAge() + ";" + person.getBirth();
+        OutputStream body = outputMessage.getBody();
+        body.write(data.getBytes());
+    }
+}
+
+```
+
